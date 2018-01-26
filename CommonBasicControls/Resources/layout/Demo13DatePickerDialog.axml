@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+    <Button
+        android:id="@+id/btnDate"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="选择日期" />
+    <TextView
+        android:id="@+id/textDateInfo"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:cursorVisible="false"
+        android:editable="false"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"
+        android:text="选择的日期为：" />
+    <Button
+        android:id="@+id/btnTime"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="选择时间" />
+    <TextView
+        android:id="@+id/textTimeInfo"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:cursorVisible="false"
+        android:editable="false"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"
+        android:text="选择的时间为：" />
+    <AnalogClock
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/analogClock1" />
+</LinearLayout>

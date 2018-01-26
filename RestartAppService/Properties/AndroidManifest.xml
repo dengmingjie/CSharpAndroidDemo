@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="RestartAppService.RestartAppService" android:versionCode="1" android:versionName="1.0" android:installLocation="auto">
+	<uses-sdk android:minSdkVersion="22" android:targetSdkVersion="22" />
+	<uses-permission android:name="android.permission.GET_TASKS" />
+	<uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+	<uses-permission android:name="android.permission.RESTART_PACKAGES" />
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+	<application android:label="RestartAppService" android:icon="@drawable/Icon">
+    <intent-filter>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+  </application>
+	<receiver android:name=".BootBroadcastReceiver">
+		<intent-filter>
+			<action android:name="android.intent.action.BOOT_COMPLETED" />
+		</intent-filter>
+	</receiver>
+</manifest>

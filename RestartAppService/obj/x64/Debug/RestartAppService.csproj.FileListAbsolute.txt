@@ -1,0 +1,14 @@
+E:\AndroidDemo\RestartAppService\bin\x64\Debug\RestartAppService.dll
+E:\AndroidDemo\RestartAppService\bin\x64\Debug\RestartAppService.pdb
+E:\AndroidDemo\RestartAppService\bin\x64\Debug\RestartAppService.RestartAppService.apk
+E:\AndroidDemo\RestartAppService\bin\x64\Debug\RestartAppService.RestartAppService-Signed.apk
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\RestartAppService.dll
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\RestartAppService.pdb
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\android\bin\RestartAppService.RestartAppService.apk
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\res\layout\main.xml
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\res\values\strings.xml
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\res\drawable\icon.png
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\R.cs.flag
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\uploadflags.txt
+E:\AndroidDemo\RestartAppService\bin\x64\Debug\RestartAppService.dll.mdb
+E:\AndroidDemo\RestartAppService\obj\x64\Debug\android\assets\RestartAppService.dll.mdb

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="Hello">Hello World, Click Me!</string>
+    <string name="ApplicationName">AdSubApp</string>
+    <string-array name="CourseItems">
+        <item>数据结构</item>
+        <item>操作系统</item>
+        <item>计算机网络</item>
+    </string-array>
+    <string name="showPopup">显示弹出菜单</string>
+    <string name="configFile">Config.json</string>
+</resources>

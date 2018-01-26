@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="#ff0000"
+      android:text="用法（1）--平均分布各列（指定宽度为1dip）"
+      android:layout_margin="5dp" />
+  <TableLayout
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:stretchColumns="*"
+      android:padding="3dip">
+    <TableRow>
+      <TextView
+          android:text="第0列"
+          android:layout_width="1dip"
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:layout_gravity="center_vertical" />
+      <TextView
+          android:text="第1列"
+          android:layout_width="1dip"
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:layout_gravity="center_vertical" />
+      <TextView
+          android:text="第2列（字数较多）"
+          android:layout_width="1dip"
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:layout_gravity="center_vertical" />
+    </TableRow>
+  </TableLayout>
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="#ff0000"
+      android:text="用法（2）--自动分布各列（不指定宽度）"
+      android:layout_margin="5dp" />
+  <TableLayout
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:stretchColumns="*"
+      android:padding="3dip">
+    <TableRow>
+      <TextView
+          android:text="第0列"
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:layout_gravity="center_vertical" />
+      <TextView
+          android:text="第1列"
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:layout_gravity="center_vertical" />
+      <TextView
+          android:text="第2列（字数较多）"
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:layout_gravity="center_vertical" />
+    </TableRow>
+  </TableLayout>
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="#ff0000"
+      android:text="用法（3）--两端对齐"
+      android:layout_margin="5dp" />
+  <TableLayout
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:stretchColumns="1">
+    <TableRow>
+      <TextView
+          android:layout_column="1"
+          android:text="打开..."
+          android:padding="3dip" />
+      <TextView
+          android:text="Ctrl-O"
+          android:gravity="right"
+          android:padding="3dip" />
+    </TableRow>
+    <TableRow>
+      <TextView
+          android:layout_column="1"
+          android:text="保存..."
+          android:padding="3dip" />
+      <TextView
+          android:text="Ctrl-S"
+          android:gravity="right"
+          android:padding="3dip" />
+    </TableRow>
+    <View
+        android:layout_height="2dip"
+        android:background="#FF909090" />
+    <TableRow>
+      <TextView
+          android:text="X"
+          android:padding="3dip" />
+      <TextView
+          android:text="导入..."
+          android:padding="3dip" />
+    </TableRow>
+    <TableRow>
+      <TextView
+          android:text="X"
+          android:padding="3dip" />
+      <TextView
+          android:text="导出..."
+          android:padding="3dip" />
+      <TextView
+          android:text="Ctrl-E"
+          android:gravity="right"
+          android:padding="3dip" />
+    </TableRow>
+  </TableLayout>
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="#ff0000"
+      android:text="用法（4）--伸展、收缩、隐藏、跨多列"
+      android:layout_margin="5dp" />
+  <TableLayout
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:stretchColumns="0"
+      android:shrinkColumns="1"
+      android:collapseColumns="2"
+      android:padding="3dip">
+    <TableRow>
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第0列（可伸展）" />
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第1列（可收缩）" />
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第2列（隐藏了）" />
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第3列" />
+    </TableRow>
+    <TableRow>
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第0列（可横向伸展）" />
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第1列（可收缩，即纵向拉伸）" />
+      <TextView
+          android:background="#7f00ffff"
+          android:layout_margin="5dp"
+          android:text="第2列（跨2列）"
+          android:layout_span="2" />
+    </TableRow>
+  </TableLayout>
+</LinearLayout>

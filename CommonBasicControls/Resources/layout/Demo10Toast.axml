@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="center">
+  <Button
+      android:id="@+id/btnDefault"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:text="默认的位置和样式" />
+  <Button
+      android:id="@+id/btnPhoto"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:text="带图片的样式（默认位置）" />
+  <Button
+      android:id="@+id/btnPosition"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:text="自定义的位置（默认样式）" />
+  <Button
+      android:id="@+id/btnCustom"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:text="自定义的样式和位置" />
+  <Button
+      android:id="@+id/btnThread"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:text="来自其他线程（默认的位置和样式）" />
+</LinearLayout>

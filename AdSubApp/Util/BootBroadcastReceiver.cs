@@ -1,0 +1,36 @@
+﻿using Android.Content;
+
+namespace AdSubApp.Util
+{
+    [BroadcastReceiver]
+    public class BootBroadcastReceiver : BroadcastReceiver
+    {
+        // 必须提供无参数的构造函数
+        public BootBroadcastReceiver() { }
+
+        public override void OnReceive(Context context, Intent intent)
+        {   
+            if (intent.Action.Equals(Intent.ActionBootCompleted))
+            {
+                // 立即启动：未完全生效、后台运行
+                Intent iStartActivity = new Intent(context, typeof(MainActivity));
+                iStartActivity.AddCategory(Intent.CategoryLauncher);
+                iStartActivity.SetAction(Intent.ActionMain);
+                iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ResetTaskIfNeeded);
+                iStartActivity.PutExtra("mode", "startup");
+                context.StartActivity(iStartActivity);
+
+                //// 延时启动：未完全生效、后台运行
+                //int requestCode = 123456 + System.DateTime.Now.Millisecond;
+                //Intent iStartActivity = new Intent(context, typeof(MainActivity));
+                //iStartActivity.AddCategory(Intent.CategoryLauncher);
+                //iStartActivity.SetAction(Intent.ActionMain);
+                //iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ResetTaskIfNeeded);
+                //iStartActivity.PutExtra("mode", "startup");
+                //PendingIntent operation = PendingIntent.GetActivity(context, requestCode, iStartActivity, PendingIntentFlags.OneShot);
+                //AlarmManager am = (AlarmManager)context.GetSystemService(Context.AlarmService);
+                //am.Set(AlarmType.Rtc, 3000, operation);
+            }
+        }
+    }
+}
