@@ -5,7 +5,7 @@
   <xs:import schemaLocation="schemas.android.com.tools.xsd" namespace="http://schemas.android.com/tools" />
   <xs:annotation>
     <xs:documentation>v21</xs:documentation>
-    <xs:documentation>2018.01.26 11:53:25</xs:documentation>
+    <xs:documentation>2018.01.26 21:04:03</xs:documentation>
   </xs:annotation>
   <xs:group name="any-view">
     <xs:choice>
@@ -236,9 +236,10 @@
     <xs:attribute ref="android:backgroundTintMode" />
     <xs:attribute ref="android:outlineProvider" />
     <xs:attribute ref="tools:visibility" />
-    <xs:attribute ref="android:layout_gravity" />
     <xs:attribute ref="android:layout_width" />
     <xs:attribute ref="android:layout_height" />
+    <xs:attribute ref="android:layout_weight" />
+    <xs:attribute ref="android:layout_gravity" />
     <xs:attribute ref="android:layout_margin" />
     <xs:attribute ref="android:layout_marginLeft" />
     <xs:attribute ref="android:layout_marginTop" />
@@ -1348,9 +1349,10 @@
     <xs:attribute ref="android:fragmentAllowEnterTransitionOverlap" />
     <xs:attribute ref="android:fragmentAllowReturnTransitionOverlap" />
     <xs:attribute ref="tools:layout" />
-    <xs:attribute ref="android:layout_gravity" />
     <xs:attribute ref="android:layout_width" />
     <xs:attribute ref="android:layout_height" />
+    <xs:attribute ref="android:layout_weight" />
+    <xs:attribute ref="android:layout_gravity" />
     <xs:attribute ref="android:layout_margin" />
     <xs:attribute ref="android:layout_marginLeft" />
     <xs:attribute ref="android:layout_marginTop" />

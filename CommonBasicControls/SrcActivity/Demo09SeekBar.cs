@@ -27,7 +27,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo09SeekBar);
@@ -40,7 +39,8 @@ namespace CommonBasicControls.SrcActivity
             textView3 = FindViewById<TextView>(Resource.Id.textView3);
 
             // 用法1：（常用）
-            seekBar1.ProgressChanged += (s, e) => {
+            seekBar1.ProgressChanged += (s, e) => 
+            {
                 if (e.FromUser)
                 {
                     textView1.Text = string.Format("seekBar1 值为 {0}", e.Progress);
@@ -50,6 +50,7 @@ namespace CommonBasicControls.SrcActivity
             // 用法2：（用接口实现）
             seekBar2.SetOnSeekBarChangeListener(this);
 
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         #region 用法2需要实现的SeekBar.IOnSeekBarChangeListener接口

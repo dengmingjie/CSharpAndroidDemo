@@ -19,13 +19,14 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo02Login);
 
             Button btn = FindViewById<Button>(Resource.Id.buttonLogin);
             btn.Click += Btn_Click;  // 技巧：按+=后，连续按两次<Tab>键
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         private void Btn_Click(object sender, EventArgs e)

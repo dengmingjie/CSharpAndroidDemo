@@ -6,6 +6,7 @@ using Android.OS;
 using Android.Views;
 using Android.Widget;
 using Android.Graphics;
+using Android.Views.Animations;
 
 using AdSubApp.Util;
 
@@ -17,6 +18,8 @@ namespace AdSubApp.SrcActivity
         private ImageView imageView = null;
 
         private Bitmap bm = null;
+
+        private AlphaAnimation animation = null;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -66,6 +69,10 @@ namespace AdSubApp.SrcActivity
 
         protected override void OnDestroy()
         {
+            base.OnDestroy();
+
+            ClearAnimation();
+
             if (bm != null)
             {
                 if (!bm.IsRecycled)
@@ -84,9 +91,55 @@ namespace AdSubApp.SrcActivity
                 imageView.Dispose();
                 imageView = null;
             }
-            
+
+            if (Intent != null)
+            {
+                if (Intent.Extras != null)
+                {
+                    Intent.Extras.Dispose();
+                }
+                Intent.Dispose();
+                Intent = null;
+            }
+
             CActivityManager.GetInstence().FinishSingleActivity(this);
-            base.OnDestroy();
+        }
+
+        protected override void OnStart()
+        {
+            base.OnStart();
+
+            // 创建淡入动画
+            animation = new AlphaAnimation(0.0f, 1.0f);
+
+            // 设置动画的执行时间  
+            animation.Duration = 1500;
+
+            // 使用StartAnimation方法执行动画  
+            imageView.StartAnimation(animation);
+        }
+
+        protected override void OnStop()
+        {
+            base.OnStop();
+        }
+
+        /// <summary>
+        /// 释放动画资源
+        /// </summary>
+        private void ClearAnimation()
+        {
+            imageView.ClearAnimation();
+            if (imageView.Animation != null)
+            {
+                imageView.Animation.Dispose();
+                imageView.Animation = null;
+            }
+            if (animation != null)
+            {
+                animation.Dispose();
+                animation = null;
+            }
         }
     }
 }

@@ -19,7 +19,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo06SwitchAndRatingBar);
@@ -51,7 +50,8 @@ namespace CommonBasicControls.SrcActivity
             radioBlue.Click += Radio_Click;
 
             Switch toggleButton = FindViewById<Switch>(Resource.Id.togglebutton);
-            toggleButton.Click += (o, e) => {
+            toggleButton.Click += (o, e) => 
+            {
                 if (toggleButton.Checked)
                     Toast.MakeText(this, "Checked", ToastLength.Short).Show();
                 else
@@ -59,9 +59,12 @@ namespace CommonBasicControls.SrcActivity
             };
 
             RatingBar ratingbar = FindViewById<RatingBar>(Resource.Id.ratingbar);
-            ratingbar.RatingBarChange += (o, e) => {
+            ratingbar.RatingBarChange += (o, e) => 
+            {
                 Toast.MakeText(this, "New Rating: " + ratingbar.Rating.ToString(), ToastLength.Short).Show();
             };
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         private void EditText_KeyPress(object sender, View.KeyEventArgs e)

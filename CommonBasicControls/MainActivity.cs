@@ -12,7 +12,6 @@ using CommonBasicControls.SrcActivity;
 using Org.Json;
 using Java.IO;
 using Java.Net;
-using Java.Util;
 
 namespace CommonBasicControls
 {
@@ -56,24 +55,32 @@ namespace CommonBasicControls
             }
    
             // 心跳线程
-            HeartBeatThread = new Java.Lang.Thread(() =>
+            if (HeartBeatThread == null)
             {
-                bIsHeartBeatThreadOn = true;
-                while (bIsHeartBeatThreadOn)
+                HeartBeatThread = new Java.Lang.Thread(() =>
                 {
-                    System.Threading.Thread.Sleep(Settings.HeartBeatRate);
-                    MemoryCheck();
-                    HeartBeat();
-                }
-            });
-            HeartBeatThread.Start();
-
+                    bIsHeartBeatThreadOn = true;
+                    while (bIsHeartBeatThreadOn)
+                    {
+                        System.Threading.Thread.Sleep(Settings.HeartBeatRate);
+                        MemoryCheck();
+                        HeartBeat();
+                    }
+                });
+            }
+            if (!HeartBeatThread.IsAlive)
+            {
+                HeartBeatThread.Start();
+            }
+			
             // 初始化首页布局
             InitMainLayout();
         }
 
         protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             bIsHeartBeatThreadOn = false;
             if (HeartBeatThread != null)
             {
@@ -82,7 +89,6 @@ namespace CommonBasicControls
             }
 
             CActivityManager.GetInstence().FinishAllActivity();
-            base.OnDestroy();
         }
 
         /// <summary>
@@ -240,6 +246,25 @@ namespace CommonBasicControls
                 }
             };
         }
+		
+		/// <summary>
+        /// 判断时间点是否在范围内
+        /// </summary>
+        /// <param name="point">时间点</param>
+        /// <param name="startTime">起始时间</param>
+        /// <param name="endTime">终止时间</param>
+        bool IsTimePointIn(DateTime point, string startTime = "01:30", string endTime = "6:30")
+        {
+            TimeSpan ts = point.TimeOfDay;
+            TimeSpan timeSpan1 = DateTime.Parse(startTime).TimeOfDay;
+            TimeSpan timeSpan2 = DateTime.Parse(endTime).TimeOfDay;
+
+            if (ts > timeSpan1 && ts < timeSpan2)
+            {
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// 内存检查
@@ -259,7 +284,6 @@ namespace CommonBasicControls
 
             if (lNativeHeapFreeSize <= 1048576 * 3)  // 3Mb
             {
-                // 建议的方法：
                 RunOnUiThread(() =>
                 {
                     Toast.MakeText(this, "当前进程navtive堆内存不足", ToastLength.Long).Show();
@@ -270,7 +294,6 @@ namespace CommonBasicControls
             {
                 if (Settings.lNativeHeapSize != 0 && Settings.lNativeHeapSize != lNativeHeapSize)
                 {
-                    // 建议的方法：
                     RunOnUiThread(() =>
                     {
                         Toast.MakeText(this, "当前进程navtive堆内存重新分配", ToastLength.Long).Show();
@@ -294,7 +317,7 @@ namespace CommonBasicControls
             // 获取系统全局Activity管理器
             if (am == null)
             {
-                am = (ActivityManager)this.GetSystemService(Context.ActivityService);
+                am = this.GetSystemService(Context.ActivityService) as ActivityManager;
             }
             // 获取当前运行中进程
             var runningAppProcesses = am.RunningAppProcesses;
@@ -325,14 +348,18 @@ namespace CommonBasicControls
         public void RestartApp(string packageName, long triggerAtMillis = 3000)
         {
             int requestCode = 123456 + System.DateTime.Now.Millisecond;
-            Intent iStartActivity = PackageManager.GetLaunchIntentForPackage(packageName);
-            iStartActivity.AddCategory(Intent.CategoryLauncher);
-            iStartActivity.SetAction(Intent.ActionMain);
-            iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
-            iStartActivity.PutExtra("mode", "restart");
-            PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot);
-            AlarmManager am = (AlarmManager)GetSystemService(Context.AlarmService);
-            am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+            using (Intent iStartActivity = PackageManager.GetLaunchIntentForPackage(packageName))
+            {
+                iStartActivity.AddCategory(Intent.CategoryLauncher);
+                iStartActivity.SetAction(Intent.ActionMain);
+                iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
+                iStartActivity.PutExtra("mode", "restart");
+                using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
+                using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                {
+                    am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                }
+            }
         }
 
         /// <summary>
@@ -353,12 +380,6 @@ namespace CommonBasicControls
                 {
                     if (config.Exists())
                     {
-                        // 建议的方法：
-                        RunOnUiThread(() =>
-                        {
-                            Toast.MakeText(this, GetString(Resource.String.configFile), ToastLength.Short).Show();
-                        });
-
                         try
                         {
                             using (FileInputStream fis = new FileInputStream(config))
@@ -370,6 +391,7 @@ namespace CommonBasicControls
                                 {
                                     jsonObject = new JSONObject((string)jsonStr);
                                 }
+                                jsonBuffer = null;
                             }
                         }
                         catch (IOException e)
@@ -381,6 +403,12 @@ namespace CommonBasicControls
                     }
                     else
                     {
+                        // 配置文件不存在
+                        RunOnUiThread(() =>
+                        {
+                            Toast.MakeText(this, "配置文件不存在！", ToastLength.Short).Show();
+                        });
+
                         //try
                         //{
                         //    // 写入配置文件
@@ -422,78 +450,70 @@ namespace CommonBasicControls
         {
             try
             {
-                HttpURLConnection urlConn = (HttpURLConnection)Settings.url.OpenConnection();  // 创建HTTP连接
-                urlConn.RequestMethod = "POST";  // 启用POST方式
-                //urlConn.RequestMethod = "Get";  // 启用Get方式
-                urlConn.UseCaches = false;  // 不启用缓存
-                urlConn.DoOutput = true;  // 启用输出流
-                urlConn.DoInput = true;  // 启用输入流
-                urlConn.InstanceFollowRedirects = true;  // 启用HTTP重定向
-                //urlConn.SetRequestProperty("Content-Type", "application/x-www-form-urlencoded");  // 设置请求类型
-                urlConn.SetRequestProperty("Content-Type", "application/json");  // 设置请求类型
+                // 创建HTTP连接
+                using (HttpURLConnection httpConn = Settings.url.OpenConnection() as HttpURLConnection)
+                {
+                    httpConn.RequestMethod = "POST";  // 启用POST方式
+                    httpConn.UseCaches = false;  // 不启用缓存
+                    httpConn.DoOutput = true;  // 启用输出流
+                    httpConn.DoInput = true;  // 启用输入流
+                    httpConn.InstanceFollowRedirects = true;  // 启用HTTP重定向
+                    //httpConn.SetRequestProperty("Content-Type", "application/x-www-form-urlencoded");  // 设置请求类型
+                    httpConn.SetRequestProperty("Content-Type", "application/json");  // 设置请求类型
+                    httpConn.ConnectTimeout = 10000;  // 设置超时时间
 
-                DataOutputStream outStream = new DataOutputStream(urlConn.OutputStream);  // 获取输出流
-                // 格式化心跳参数
-                if (!Settings.HeartBeatParams.Has("action"))
-                {
-                    Settings.HeartBeatParams.Put("action", "AdSubAppHeartBeat");
-                }
-                if (!Settings.HeartBeatParams.Has("cpuId"))
-                {
-                    //Settings.HeartBeatParams.Put("cpuId", Settings.CpuId);
-                    Settings.HeartBeatParams.Put("cpuId", "666999");
-                }
-                if (!Settings.HeartBeatParams.Has("version"))
-                {
-                    Settings.HeartBeatParams.Put("version", Settings.Version);
-                }
-                outStream.WriteBytes(Settings.HeartBeatParams.ToString().Replace("\r", "").Replace("\n", "").Replace(" ", ""));  // 将数据写入输出流
-                Settings.HeartBeatParams.Remove("lastCmd");
-                Settings.HeartBeatParams.Remove("errMsg");
-                outStream.Flush();  // 立刻输出缓存数据
-                outStream.Close();  // 关闭输出流
-                outStream.Dispose();  // 释放输出流
-                outStream = null;
-
-                // 判断是否响应成功
-                if (urlConn.ResponseCode == HttpStatus.Ok)
-                {
-                    InputStreamReader inStream = new InputStreamReader(urlConn.InputStream);  // 获取输入流
-                    BufferedReader buffer = new BufferedReader(inStream);  // 获取输入流读取器
-                    string inputLine = null, heartBeatResult = null;
-                    while ((inputLine = buffer.ReadLine()) != null)
+                    // 获取输出流
+                    using (DataOutputStream outStream = new DataOutputStream(httpConn.OutputStream))
                     {
-                        heartBeatResult += inputLine + "\n";
+                        // 格式化心跳参数
+                        if (!Settings.HeartBeatParams.Has("action"))
+                        {
+                            Settings.HeartBeatParams.Put("action", "AdSubAppHeartBeat");
+                        }
+                        if (!Settings.HeartBeatParams.Has("cpuId"))
+                        {
+                            //Settings.HeartBeatParams.Put("cpuId", Settings.CpuId);
+                            Settings.HeartBeatParams.Put("cpuId", "666999");
+                        }
+                        if (!Settings.HeartBeatParams.Has("version"))
+                        {
+                            Settings.HeartBeatParams.Put("version", Settings.Version);
+                        }
+                        outStream.WriteBytes(Settings.HeartBeatParams.ToString().Replace("\r", "").Replace("\n", "").Replace(" ", ""));  // 将数据写入输出流
+                        Settings.HeartBeatParams.Remove("lastCmd");
+                        Settings.HeartBeatParams.Remove("errMsg");
+                        outStream.Flush();  // 立刻输出缓存数据
                     }
-                    buffer.Close();  // 关闭输入流读取器
-                    buffer.Dispose();  // 释放输入流读取器
-                    buffer = null;
-                    inStream.Close();  // 关闭输入流
-                    inStream.Dispose();  // 释放输入流
-                    inStream = null;
 
-                    // 解析心跳返回数据
-                    ParseHeartBeatResult(heartBeatResult);
-                }
-                else
-                {
-                    long Code = (long)urlConn.ResponseCode;
-
-                    // 建议的方法：
-                    RunOnUiThread(() =>
+                    // 判断是否响应成功
+                    if (httpConn.ResponseCode == HttpStatus.Ok)
                     {
-                        Toast.MakeText(this, "心跳线程: HTTP error code " + Code, ToastLength.Long).Show();
-                    });
-                }
+                        using (InputStreamReader inStream = new InputStreamReader(httpConn.InputStream))  // 获取输入流
+                        using (BufferedReader buffer = new BufferedReader(inStream))  // 获取输入流读取器
+                        {
+                            string inputLine = null, heartBeatResult = null;
+                            while ((inputLine = buffer.ReadLine()) != null)
+                            {
+                                heartBeatResult += inputLine + "\n";
+                            }
 
-                urlConn.Disconnect();  // 断开HTTP连接
-                urlConn.Dispose();  // 释放HTTP连接
-                urlConn = null;
-            }
-            catch (IOException e)
-            {
-                e.PrintStackTrace();
-                System.Console.WriteLine("HeartBeat IOException: " + e.Message);
+                            // 解析心跳返回数据
+                            ParseHeartBeatResult(heartBeatResult);
+                        }
+                    }
+                    else
+                    {
+                        long Code = (long)httpConn.ResponseCode;
+
+                        // HTTP error
+                        RunOnUiThread(() =>
+                        {
+                            Toast.MakeText(this, "心跳线程: HTTP error code " + Code, ToastLength.Long).Show();
+                        });
+                    }
+
+                    httpConn.Disconnect();  // 断开HTTP连接
+                }
             }
             catch (Exception e)
             {
@@ -520,10 +540,9 @@ namespace CommonBasicControls
                         string cmd = jsonResult.OptString("cmd");
                         if (!string.IsNullOrEmpty(cmd))
                         {
-                            // 建议的方法：
                             RunOnUiThread(() =>
                             {
-                                Toast.MakeText(this, "cmd: " + cmd, ToastLength.Long).Show();
+                                Toast.MakeText(this, "cmd: " + cmd, ToastLength.Short).Show();
                             });
 
                             // 解析参数
@@ -550,83 +569,111 @@ namespace CommonBasicControls
                                         {
                                             // 更新节目
                                             // 读取配置文件
-                                            JSONObject jsonConfig = ReadConfig();
-                                            string ftpUser = cmdArg.OptString("user");
-                                            string ftpPwd = cmdArg.OptString("pwd");
-                                            using (JSONObject program = jsonConfig.OptJSONObject("program"))
-                                            using (JSONArray resources = program.OptJSONArray("resources"))
+                                            using (JSONObject jsonConfig = ReadConfig())
                                             {
-                                                int i = 0, nLength = resources.Length();
-                                                for (i = 0; i < nLength; i++)  // 资源循环
+                                                string ftpUser = cmdArg.OptString("user");
+                                                string ftpPwd = cmdArg.OptString("pwd");
+                                                using (JSONObject program = jsonConfig.OptJSONObject("program"))
+                                                using (JSONArray resources = program.OptJSONArray("resources"))
                                                 {
-                                                    string name, type, md5, url;
-                                                    using (JSONObject resource = resources.GetJSONObject(i))
+                                                    int i = 0, nLength = resources.Length();
+                                                    for (i = 0; i < nLength; i++)  // 资源循环
                                                     {
-                                                        name = resource.OptString("name");
-                                                        type = resource.OptString("type");
-                                                        md5 = resource.OptString("md5");
-                                                        url = resource.OptString("url");
-                                                    }
-                                                    string localpath = Settings.AppPath + "/" + type + "/" + name;
-                                                    using (File localFile = new File(localpath))
-                                                    {
-                                                        if (localFile.Exists())
+                                                        string name, type, md5, url;
+                                                        using (JSONObject resource = resources.GetJSONObject(i))
                                                         {
-                                                            continue;
+                                                            name = resource.OptString("name");
+                                                            type = resource.OptString("type");
+                                                            md5 = resource.OptString("md5");
+                                                            url = resource.OptString("url");
                                                         }
-                                                        else
+                                                        string localpath = Settings.AppPath + "/" + type + "/" + name;
+                                                        using (File localFile = new File(localpath))
                                                         {
-                                                            using (File typePath = new File(Settings.AppPath + "/" + type))
+                                                            if (localFile.Exists())
                                                             {
-                                                                if (!typePath.Exists())
+                                                                RunOnUiThread(() =>
                                                                 {
-                                                                    typePath.Mkdirs();
+                                                                    Toast.MakeText(this, localFile.Name + "文件已存在！", ToastLength.Long).Show();
+                                                                });
+                                                                continue;
+                                                            }
+                                                            else
+                                                            {
+                                                                using (File typePath = new File(Settings.AppPath + "/" + type))
+                                                                {
+                                                                    if (!typePath.Exists())
+                                                                    {
+                                                                        typePath.Mkdirs();
+                                                                    }
                                                                 }
                                                             }
                                                         }
-                                                    }
 
-                                                    // 下载资源
-                                                    if (FtpDownload(ftpUser, ftpPwd, url, localpath))
+                                                        // 下载资源
+                                                        if (FtpDownload(ftpUser, ftpPwd, url, localpath))
+                                                        {
+                                                            // 下载资源成功
+                                                            RunOnUiThread(() =>
+                                                            {
+                                                                Toast.MakeText(this, "下载资源" + name + "成功！", ToastLength.Long).Show();
+                                                            });
+
+                                                            //// 匹配MD5值
+                                                            //if (!MatchMd5(localpath, md5))
+                                                            //{
+                                                            //    // 匹配MD5值失败
+                                                            //    RunOnUiThread(() =>
+                                                            //    {
+                                                            //        Toast.MakeText(this, "匹配MD5值失败！", ToastLength.Long).Show();
+                                                            //    });
+                                                            //    Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
+                                                            //    Settings.HeartBeatParams.Put("errMsg", "Failed to match " + name + " MD5");
+
+                                                            //    // 恢复备份文件
+                                                            //    configFile.Delete();
+                                                            //    bakConfigFile.RenameTo(configFile);
+                                                            //    break;
+                                                            //}
+                                                        }
+                                                        else
+                                                        {
+                                                            // 下载资源失败
+                                                            RunOnUiThread(() =>
+                                                            {
+                                                                Toast.MakeText(this, "下载资源" + name + "失败！", ToastLength.Long).Show();
+                                                            });
+                                                            Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
+                                                            Settings.HeartBeatParams.Put("errMsg", "Failed to download " + name);
+
+                                                            // 恢复备份文件
+                                                            configFile.Delete();
+                                                            bakConfigFile.RenameTo(configFile);
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (i >= nLength)
                                                     {
-                                                        //// 匹配MD5值
-                                                        //if (!MatchMd5(localpath, md5))
-                                                        //{
-                                                        //    // 匹配MD5值失败
-                                                        //    Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
-                                                        //    Settings.HeartBeatParams.Put("errMsg", "Failed to match " + name + " MD5");
+                                                        // 所有资源下载成功
+                                                        RunOnUiThread(() =>
+                                                        {
+                                                            Toast.MakeText(this, "所有资源下载成功！", ToastLength.Long).Show();
+                                                        });
+                                                        Settings.HeartBeatParams.Put("lastCmd", cmd + "_Success");
 
-                                                        //    // 恢复备份文件
-                                                        //    configFile.Delete();
-                                                        //    bakConfigFile.RenameTo(configFile);
-                                                        //    break;
-                                                        //}
+                                                        // 重新载入节目
+                                                        //bIsProgramLoop = false;
                                                     }
-                                                    else
-                                                    {
-                                                        // 下载资源失败
-                                                        Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
-                                                        Settings.HeartBeatParams.Put("errMsg", "Failed to download " + name);
-
-                                                        // 恢复备份文件
-                                                        configFile.Delete();
-                                                        bakConfigFile.RenameTo(configFile);
-                                                        break;
-                                                    }
-                                                }
-                                                if (i >= nLength)
-                                                {
-                                                    // 所有资源下载成功
-                                                    Settings.HeartBeatParams.Put("lastCmd", cmd + "_Success");
-
-                                                    // 重新载入节目
-                                                    //bIsProgramLoop = false;
                                                 }
                                             }
                                         }
                                         else
                                         {
                                             // 下载配置失败
+                                            RunOnUiThread(() =>
+                                            {
+                                                Toast.MakeText(this, "下载配置失败！", ToastLength.Long).Show();
+                                            });
                                             Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
                                             Settings.HeartBeatParams.Put("errMsg", "Failed to download Config");
 
@@ -668,10 +715,9 @@ namespace CommonBasicControls
                         {
                             string timeStamp = jsonResult.OptString("timeStamp");
 
-                            // 建议的方法：
                             RunOnUiThread(() =>
                             {
-                                Toast.MakeText(this, "心跳线程: " + timeStamp, ToastLength.Long).Show();
+                                Toast.MakeText(this, "心跳线程: " + timeStamp, ToastLength.Short).Show();
                             });
                         }
                     }
@@ -679,7 +725,6 @@ namespace CommonBasicControls
                     {
                         string ErrMsg = jsonResult.OptString("ErrMsg");
 
-                        // 建议的方法：
                         RunOnUiThread(() =>
                         {
                             Toast.MakeText(this, "心跳线程: " + ErrMsg, ToastLength.Long).Show();
@@ -703,7 +748,7 @@ namespace CommonBasicControls
         public bool FtpDownload(string userName, string password, string remotepath, string localpath)
         {
             bool bRet = true;
-            var request = (System.Net.FtpWebRequest)System.Net.WebRequest.Create(remotepath);
+            var request = System.Net.WebRequest.Create(remotepath) as System.Net.FtpWebRequest;
             request.Method = System.Net.WebRequestMethods.Ftp.DownloadFile;
             request.Credentials = new System.Net.NetworkCredential(userName, password);
             request.KeepAlive = false;
@@ -714,7 +759,7 @@ namespace CommonBasicControls
             System.IO.FileStream outStream = null;
             try
             {
-                response = (System.Net.FtpWebResponse)request.GetResponse();
+                response = request.GetResponse() as System.Net.FtpWebResponse;
                 resStream = response.GetResponseStream();
 
                 outStream = new System.IO.FileStream(localpath, System.IO.FileMode.Create);
@@ -726,6 +771,7 @@ namespace CommonBasicControls
                     outStream.Write(tmpBuf, 0, nReadCount);
                     nReadCount = resStream.Read(tmpBuf, 0, tmpBuf.Length);
                 }
+                tmpBuf = null;
             }
             catch (IOException e)
             {

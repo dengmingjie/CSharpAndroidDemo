@@ -28,7 +28,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo03MultiResolution);
@@ -41,6 +40,8 @@ namespace CommonBasicControls.SrcActivity
                 photo_index = (photo_index + 1) % photo_ids.Count;
                 ShowPhoto(photo_index);
             };
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         //---------------------------------------------------------------------------

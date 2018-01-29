@@ -90,6 +90,7 @@ namespace CommonBasicControls.Util
                                 ret.AppendFormat("{0:x2}", b);
                             }
                             _cpuId = ret.ToString();
+                            buffer = null;
                         }
                     }
                 }

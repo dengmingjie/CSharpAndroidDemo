@@ -20,7 +20,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo01EditText);
@@ -40,6 +39,8 @@ namespace CommonBasicControls.SrcActivity
             {
                 txtResult.Text = "输入的内容为：" + txt2.Text;
             };
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
     }
 }

@@ -19,7 +19,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo08Gallery);
@@ -31,6 +30,8 @@ namespace CommonBasicControls.SrcActivity
                 CurrentHeight = 550
             };
             g.ItemClick += Gallery_ItemClick;
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         private void Gallery_ItemClick(object sender, AdapterView.ItemClickEventArgs e)

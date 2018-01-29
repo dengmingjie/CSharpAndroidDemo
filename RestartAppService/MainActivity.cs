@@ -1,4 +1,6 @@
-﻿using Android.App;
+﻿using System;
+
+using Android.App;
 using Android.OS;
 using Android.Content;
 using Android.Views;
@@ -47,6 +49,8 @@ namespace RestartAppService
 
         protected override void OnDestroy()
         {
+            base.OnDestroy();
+            
             // 释放资源
             bIsDaemonThreadOn = false;
             if (DaemonThread != null)
@@ -61,8 +65,26 @@ namespace RestartAppService
                 am = null;
             }
 
-            base.OnDestroy();
             RestartApp(this.PackageName);  // 重启自己
+        }
+
+        /// <summary>
+        /// 判断时间点是否在范围内
+        /// </summary>
+        /// <param name="point">时间点</param>
+        /// <param name="startTime">起始时间</param>
+        /// <param name="endTime">终止时间</param>
+        public bool IsTimePointIn(DateTime point, string startTime = "01:20", string endTime = "6:40")
+        {
+            TimeSpan ts = point.TimeOfDay;
+            TimeSpan timeSpan1 = DateTime.Parse(startTime).TimeOfDay;
+            TimeSpan timeSpan2 = DateTime.Parse(endTime).TimeOfDay;
+
+            if (ts > timeSpan1 && ts < timeSpan2)
+            {
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -73,7 +95,7 @@ namespace RestartAppService
         /// <summary>
         /// 守护线程控制
         /// </summary>
-        bool bIsDaemonThreadOn = false;
+        public bool bIsDaemonThreadOn = false;
 
         /// <summary>
         /// 系统全局Activity管理器
@@ -88,7 +110,7 @@ namespace RestartAppService
             // 获取系统全局Activity管理器
             if (am == null)
             {
-                am = (ActivityManager)this.GetSystemService(Context.ActivityService);
+                am = this.GetSystemService(Context.ActivityService) as ActivityManager;
             }
             // 获取当前运行中进程
             var runningAppProcesses = am.RunningAppProcesses;
@@ -106,8 +128,18 @@ namespace RestartAppService
             }
             if (!bIsRunning)
             {
-                // 未运行，则重启之！
-                RestartApp(Settings.PeerName);
+                //if (IsTimePointIn(DateTime.UtcNow))
+                if (IsTimePointIn(DateTime.Now))
+                {
+                    // 01:30~6:30 AdSubApp会关闭
+                    // 不重启，sleep 10min
+                    System.Threading.Thread.Sleep(1000 * 60 * 10);
+                }
+                else
+                {
+                    // 未运行，则重启之！
+                    RestartApp(Settings.PeerName);
+                }
             }
         }
 
@@ -119,14 +151,18 @@ namespace RestartAppService
         public void RestartApp(string packageName, long triggerAtMillis = 3000)
         {
             int requestCode = 123456 + System.DateTime.Now.Millisecond;
-            Intent iStartActivity = PackageManager.GetLaunchIntentForPackage(packageName);
-            iStartActivity.AddCategory(Intent.CategoryLauncher);
-            iStartActivity.SetAction(Intent.ActionMain);
-            iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
-            iStartActivity.PutExtra("mode", "restart");
-            PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot);
-            AlarmManager am = (AlarmManager)GetSystemService(Context.AlarmService);
-            am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+            using (Intent iStartActivity = PackageManager.GetLaunchIntentForPackage(packageName))
+            {
+                iStartActivity.AddCategory(Intent.CategoryLauncher);
+                iStartActivity.SetAction(Intent.ActionMain);
+                iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
+                iStartActivity.PutExtra("mode", "restart");
+                using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
+                using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                {
+                    am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                }
+            }
         }
     }
 }

@@ -22,7 +22,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo04CheckBoxRadioButton);
@@ -34,6 +33,8 @@ namespace CommonBasicControls.SrcActivity
 
             var button = FindViewById<Button>(Resource.Id.btnOK);
             button.Click += Button_Click;
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         private void Button_Click(object sender, EventArgs e)

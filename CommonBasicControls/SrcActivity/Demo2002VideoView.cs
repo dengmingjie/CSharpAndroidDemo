@@ -18,12 +18,11 @@ namespace CommonBasicControls.SrcActivity
     [Activity(Label = "Demo2002VideoView")]
     public class Demo2002VideoView : Activity, ISurfaceHolderCallback
     {
-        private VideoView videoView;
+        private VideoView videoView = null;
         
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // 隐藏标题栏  
             this.RequestWindowFeature(WindowFeatures.NoTitle);
@@ -35,12 +34,21 @@ namespace CommonBasicControls.SrcActivity
             // Create your application here
             SetContentView(Resource.Layout.Demo2002VideoView);
 
-            videoView = FindViewById<VideoView>(Resource.Id.videoView);
+            if (videoView == null)
+            {
+                videoView = FindViewById<VideoView>(Resource.Id.videoView);
+            }
 
-            holder = videoView.Holder;
+            if (holder == null)
+            {
+                holder = videoView.Holder;
+            }
             holder.AddCallback(this);
 
-            mediaPlayer = new MediaPlayer();
+            if (mediaPlayer == null)
+            {
+                mediaPlayer = new MediaPlayer();
+            }
             mediaPlayer.Prepared += MediaPlayer_Prepared;
             mediaPlayer.Completion += MediaPlayer_Completion;
 
@@ -58,24 +66,40 @@ namespace CommonBasicControls.SrcActivity
                 }
                 StartVideoPlayer(uri, bIsLoop);
             }
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             StopVideoPlayer();
-            mediaPlayer.SetDisplay(null);
-            mediaPlayer.Release();
-            mediaPlayer.Dispose();
-            mediaPlayer = null;
-            holder.Dispose();
-            holder = null;
-            videoView.Holder.Dispose();
-            videoView.DestroyDrawingCache();
-            videoView.Dispose();
-            videoView = null;
+
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.SetDisplay(null);
+                mediaPlayer.Release();
+                mediaPlayer.Dispose();
+                mediaPlayer = null;
+            }
+
+            if (holder != null)
+            {
+                holder.Dispose();
+                holder = null;
+            }
+
+            if (videoView != null)
+            {
+                videoView.Holder.Dispose();
+                videoView.DestroyDrawingCache();
+                videoView.Dispose();
+                videoView = null;
+            }
+
             CActivityManager.GetInstence().FinishSingleActivity(this);
             Settings.semVideoCompleted.Release();
-            base.OnDestroy();
         }
 
         protected override void OnStart()
@@ -90,20 +114,20 @@ namespace CommonBasicControls.SrcActivity
 
         protected override void OnPause()
         {
-            mediaPlayer.Pause();
             base.OnPause();
+            mediaPlayer.Pause();
         }
 
         protected override void OnStop()
         {
-            StopVideoPlayer();
             base.OnStop();
+            StopVideoPlayer();
         }
 
         protected override void OnRestart()
         {
-            CActivityManager.GetInstence().FinishSingleActivity(this);
             base.OnRestart();
+            CActivityManager.GetInstence().FinishSingleActivity(this);
         }
 
         /// <summary>
@@ -140,7 +164,7 @@ namespace CommonBasicControls.SrcActivity
             return true;
         }
 
-        MediaPlayer mediaPlayer;
+        MediaPlayer mediaPlayer = null;
 
         private void MediaPlayer_Prepared(object sender, EventArgs e)
         {
@@ -153,7 +177,7 @@ namespace CommonBasicControls.SrcActivity
             CActivityManager.GetInstence().FinishSingleActivity(this);
         }
 
-        ISurfaceHolder holder;
+        ISurfaceHolder holder = null;
 
         public void SurfaceCreated(ISurfaceHolder holder)
         {

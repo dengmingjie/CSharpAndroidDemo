@@ -11,20 +11,22 @@ using Android.Views;
 using Android.Widget;
 using CommonBasicControls.Util;
 using Android.Graphics;
+using Android.Views.Animations;
 
 namespace CommonBasicControls.SrcActivity
 {
     [Activity(Label = "Demo2003ImageView")]
     public class Demo2003ImageView : Activity
     {
-        private ImageView imageView;
+        private ImageView imageView = null;
 
         private Bitmap bm = null;
+
+        private AlphaAnimation animation = null;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // 隐藏标题栏  
             this.RequestWindowFeature(WindowFeatures.NoTitle);
@@ -36,7 +38,10 @@ namespace CommonBasicControls.SrcActivity
             // Create your application here
             SetContentView(Resource.Layout.Demo2003ImageView);
 
-            imageView = FindViewById<ImageView>(Resource.Id.imageView1);
+            if (imageView == null)
+            {
+                imageView = FindViewById<ImageView>(Resource.Id.imageView1);
+            }
             imageView.SetScaleType(ImageView.ScaleType.FitXy);
 
             string uri = Intent.Extras.GetString("uri") ?? "";
@@ -61,10 +66,16 @@ namespace CommonBasicControls.SrcActivity
                     System.Console.WriteLine("imageView Exception: " + e.Message);
                 }
             }
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         protected override void OnDestroy()
         {
+            base.OnDestroy();
+
+            ClearAnimation();
+
             if (bm != null)
             {
                 if (!bm.IsRecycled)
@@ -74,13 +85,54 @@ namespace CommonBasicControls.SrcActivity
                 bm.Dispose();
                 bm = null;
             }
-            imageView.SetImageBitmap(null);
-            imageView.DestroyDrawingCache();
-            imageView.Drawable.Dispose();
-            imageView.Dispose();
-            imageView = null;
+
+            if (imageView != null)
+            {
+                imageView.SetImageBitmap(null);
+                imageView.DestroyDrawingCache();
+                imageView.Drawable.Dispose();
+                imageView.Dispose();
+                imageView = null;
+            }
+            
             CActivityManager.GetInstence().FinishSingleActivity(this);
-            base.OnDestroy();
+        }
+
+        protected override void OnStart()
+        {
+            base.OnStart();
+
+            // 创建淡入动画
+            animation = new AlphaAnimation(0.0f, 1.0f);
+
+            // 设置动画的执行时间  
+            animation.Duration = 1500;
+
+            // 使用StartAnimation方法执行动画  
+            imageView.StartAnimation(animation);
+        }
+
+        protected override void OnStop()
+        {
+            base.OnStop();
+        }
+
+        /// <summary>
+        /// 释放动画资源
+        /// </summary>
+        public void ClearAnimation()
+        {
+            imageView.ClearAnimation();
+            if (imageView.Animation != null)
+            {
+                imageView.Animation.Dispose();
+                imageView.Animation = null;
+            }
+            if (animation != null)
+            {
+                animation.Dispose();
+                animation = null;
+            }
         }
     }
 }

@@ -19,7 +19,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo07PopupMenu);
@@ -41,6 +40,8 @@ namespace CommonBasicControls.SrcActivity
                 };
                 menu.Show();
             };
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
     }
 }

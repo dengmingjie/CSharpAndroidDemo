@@ -15,7 +15,7 @@ namespace AdSubApp.SrcActivity
     public class VideoViewActivity : Activity, ISurfaceHolderCallback
     {
         private VideoView videoView = null;
-        
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -68,6 +68,8 @@ namespace AdSubApp.SrcActivity
 
         protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             StopVideoPlayer();
 
             if (mediaPlayer != null)
@@ -92,9 +94,18 @@ namespace AdSubApp.SrcActivity
                 videoView = null;
             }
 
+            if (Intent != null)
+            {
+                if (Intent.Extras != null)
+                {
+                    Intent.Extras.Dispose();
+                }
+                Intent.Dispose();
+                Intent = null;
+            }
+
             CActivityManager.GetInstence().FinishSingleActivity(this);
             Settings.semVideoCompleted.Release();
-            base.OnDestroy();
         }
 
         protected override void OnStart()
@@ -109,20 +120,20 @@ namespace AdSubApp.SrcActivity
 
         protected override void OnPause()
         {
-            mediaPlayer.Pause();
             base.OnPause();
+            mediaPlayer.Pause();
         }
 
         protected override void OnStop()
         {
-            StopVideoPlayer();
             base.OnStop();
+            StopVideoPlayer();
         }
 
         protected override void OnRestart()
         {
-            CActivityManager.GetInstence().FinishSingleActivity(this);
             base.OnRestart();
+            CActivityManager.GetInstence().FinishSingleActivity(this);
         }
 
         /// <summary>

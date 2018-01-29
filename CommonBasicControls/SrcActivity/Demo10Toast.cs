@@ -19,7 +19,6 @@ namespace CommonBasicControls.SrcActivity
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            CActivityManager.GetInstence().AddActivity(this);
 
             // Create your application here
             SetContentView(Resource.Layout.Demo10Toast);
@@ -38,6 +37,8 @@ namespace CommonBasicControls.SrcActivity
 
             var btnThread = FindViewById<Button>(Resource.Id.btnThread);
             btnThread.Click += Button_Click;
+
+            CActivityManager.GetInstence().AddActivity(this);
         }
 
         private void Button_Click(object sender, EventArgs e)
@@ -51,7 +52,7 @@ namespace CommonBasicControls.SrcActivity
                 case Resource.Id.btnPhoto:
                     {
                         var toast = Toast.MakeText(this, "这是带图片的样式（默认位置）", ToastLength.Short);
-                        LinearLayout toastView = (LinearLayout)toast.View;
+                        LinearLayout toastView = toast.View as LinearLayout;
                         ImageView imageCodeProject = new ImageView(this);
                         imageCodeProject.SetImageResource(Resource.Drawable.Icon);
                         toastView.AddView(imageCodeProject, 0);
@@ -112,7 +113,7 @@ namespace CommonBasicControls.SrcActivity
             textViewTitle.Text = title;
             
             // 设置显示的图像
-            var picture = (ImageView)customView.FindViewById(Resource.Id.picture);
+            var picture = customView.FindViewById<ImageView>(Resource.Id.picture);
             picture.SetImageResource(pictureId);
             
             // 设置显示的文本内容
