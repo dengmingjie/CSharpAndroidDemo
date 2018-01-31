@@ -12,6 +12,7 @@ using AdSubApp.SrcActivity;
 using Org.Json;
 using Java.IO;
 using Java.Net;
+using Java.Util.Logging;
 
 namespace AdSubApp
 {
@@ -32,24 +33,6 @@ namespace AdSubApp
 
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
-
-            // 获取启动方式
-            string mode = null;
-            if (Intent.Extras != null)
-            {
-                mode = Intent.Extras.GetString("mode");
-            }
-            // 解析启动方式
-            if (ParseMode(mode) == 1)
-            {
-                // 开机自启动：未完全生效，后台运行
-                // 故重启！
-                //RestartApp();
-
-                // 重启后亦不生效，自杀后，通过守护进程开启
-                Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
-                return;
-            }
 
             // 判断SD卡是否存在 
             if (Android.OS.Environment.ExternalStorageState == Android.OS.Environment.MediaMounted)
@@ -72,6 +55,28 @@ namespace AdSubApp
                 Settings.AppPath = "./" + GetString(Resource.String.ApplicationName);
             }
 
+            // 初始化运行时日志
+            InitRuntimeLog();
+
+            // 获取启动方式
+            string mode = null;
+            if (Intent.Extras != null)
+            {
+                mode = Intent.Extras.GetString("mode");
+            }
+            // 解析启动方式
+            if (ParseMode(mode) == 1)
+            {
+                // 开机自启动：未完全生效，后台运行
+                // 故重启！
+                //RestartApp();
+
+                // 重启后亦不生效，自杀后，通过守护进程开启
+                Settings.RuntimeLog.Info("重启后亦不生效，自杀后，通过守护进程开启");
+                Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
+                return;
+            }
+
             // 节目控制线程
             if (ProgramControlThread == null)
             {
@@ -80,7 +85,7 @@ namespace AdSubApp
                     bIsProgramControlThreadOn = true;
                     while (bIsProgramControlThreadOn)
                     {
-                        System.Threading.Thread.Sleep(1000);
+                        System.Threading.Thread.Sleep(2000);
                         ProgramControl();
                     }
                 });
@@ -108,6 +113,7 @@ namespace AdSubApp
                             Daemon();  // 关闭前，查看守护进程
                             Finish();
                             System.Threading.Thread.Sleep(8);
+                            Settings.RuntimeLog.Info("01:30~6:30 关闭程序");
                             Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
                         }
                     }
@@ -171,6 +177,52 @@ namespace AdSubApp
             }
 
             CActivityManager.GetInstence().FinishAllActivity();
+            Settings.RuntimeLog.Info("OnDestroy");
+            FreeRuntimeLog();
+        }
+
+        /// <summary>
+        /// 初始化运行时日志
+        /// </summary>
+        public void InitRuntimeLog()
+        {
+            // 创建/获取日志对象
+            Settings.RuntimeLog = Logger.GetLogger(GetString(Resource.String.ApplicationName));
+            Settings.RuntimeLog.Level = Level.Info;  // 设置日志等级
+
+            // 设置控制台输出
+            using (ConsoleHandler consoleHandler = new ConsoleHandler())
+            {
+                //consoleHandler.Formatter = new LogFormatter();  // 设置日志格式
+                consoleHandler.Level = Level.All;  // 设置日志等级
+                Settings.RuntimeLog.AddHandler(consoleHandler);
+            }
+
+            // 设置文件输出
+            using (FileHandler fileHandler = new FileHandler(Settings.AppPath + "/runtime.log"))
+            {
+                fileHandler.Formatter = new LogFormatter();  // 设置日志格式
+                fileHandler.Level = Level.Info;  // 设置日志等级
+                Settings.RuntimeLog.AddHandler(fileHandler);
+            }
+
+            //Settings.RuntimeLog.Info("RuntimeLog test");
+        }
+
+        /// <summary>
+        /// 释放运行时日志
+        /// </summary>
+        public void FreeRuntimeLog()
+        {
+            if (Settings.RuntimeLog != null)
+            {
+                var handlers = Settings.RuntimeLog.GetHandlers();
+                foreach (var one in handlers)
+                {
+                    one.Flush();
+                    one.Close();
+                }
+            }
         }
 
         /// <summary>
@@ -189,6 +241,7 @@ namespace AdSubApp
                     {
                         Toast.MakeText(this, "开机启动", ToastLength.Short).Show();
                     });
+                    Settings.RuntimeLog.Info("开机启动");
                     Settings.HeartBeatParams.Put("lastCmd", mode + "_Success");
                     nMode = 1;
                 }
@@ -199,6 +252,7 @@ namespace AdSubApp
                     {
                         Toast.MakeText(this, "重启应用", ToastLength.Short).Show();
                     });
+                    Settings.RuntimeLog.Info("重启应用");
                     Settings.HeartBeatParams.Put("lastCmd", mode + "_Success");
                     nMode = 2;
                 }
@@ -209,6 +263,7 @@ namespace AdSubApp
                     {
                         Toast.MakeText(this, "未知的启动方式", ToastLength.Short).Show();
                     });
+                    Settings.RuntimeLog.Info("未知的启动方式");
                     nMode = 3;
                 }
             }
@@ -219,6 +274,7 @@ namespace AdSubApp
                 {
                     Toast.MakeText(this, "手动启动", ToastLength.Short).Show();
                 });
+                Settings.RuntimeLog.Info("手动启动");
                 Settings.HeartBeatParams.Put("lastCmd", "start_Success");
                 nMode = 0;
             }
@@ -266,6 +322,7 @@ namespace AdSubApp
                 {
                     Toast.MakeText(this, "当前进程navtive堆内存不足", ToastLength.Long).Show();
                 });
+                Settings.RuntimeLog.Warning("当前进程navtive堆内存不足");
                 System.GC.Collect();  // 垃圾回收
             }
             else
@@ -276,6 +333,7 @@ namespace AdSubApp
                     {
                         Toast.MakeText(this, "当前进程navtive堆内存重新分配", ToastLength.Long).Show();
                     });
+                    Settings.RuntimeLog.Warning("当前进程navtive堆内存重新分配");
                     System.GC.Collect();  // 垃圾回收
                 }
                 Settings.lNativeHeapSize = lNativeHeapSize;
@@ -308,12 +366,14 @@ namespace AdSubApp
                 {
                     // 运行中
                     bIsRunning = true;
+                    Settings.RuntimeLog.Info("被守护程序运行中");
                     break;
                 }
             }
             if (!bIsRunning)
             {
                 // 未运行，则重启之！
+                Settings.RuntimeLog.Info("被守护程序未运行，则重启之！");
                 RestartApp(Settings.PeerName);
             }
         }
@@ -375,8 +435,8 @@ namespace AdSubApp
                         catch (IOException e)
                         {
                             jsonObject = null;
-                            e.PrintStackTrace();
                             System.Console.WriteLine("Parse Config IOException: " + e.Message);
+                            Settings.RuntimeLog.Severe("Parse Config IOException: " + e.ToString());
                         }
                     }
                     else
@@ -384,8 +444,9 @@ namespace AdSubApp
                         // 配置文件不存在
                         RunOnUiThread(() =>
                         {
-                            Toast.MakeText(this, "配置文件不存在！", ToastLength.Short).Show();
+                            Toast.MakeText(this, "配置文件不存在", ToastLength.Short).Show();
                         });
+                        Settings.RuntimeLog.Warning("配置文件不存在");
 
                         //try
                         //{
@@ -441,6 +502,7 @@ namespace AdSubApp
                 {
                     Toast.MakeText(this, "正在载入节目...", ToastLength.Long).Show();
                 });
+                Settings.RuntimeLog.Info("正在载入节目...");
                 bIsProgramLoop = true;
             }
 
@@ -462,6 +524,7 @@ namespace AdSubApp
                             {
                                 Toast.MakeText(this, "重新载入节目...", ToastLength.Long).Show();
                             });
+                            Settings.RuntimeLog.Info("重新载入节目...");
                             break;
                         }
                         System.Threading.Thread.Sleep(50);
@@ -594,6 +657,7 @@ namespace AdSubApp
                         {
                             Toast.MakeText(this, "心跳线程: HTTP error code " + Code, ToastLength.Long).Show();
                         });
+                        Settings.RuntimeLog.Info("心跳线程: HTTP error code " + Code);
                     }
 
                     httpConn.Disconnect();  // 断开HTTP连接
@@ -601,7 +665,12 @@ namespace AdSubApp
             }
             catch (Exception e)
             {
+                RunOnUiThread(() =>
+                {
+                    Toast.MakeText(this, "HeartBeat Exception: " + e.Message, ToastLength.Long).Show();
+                });
                 System.Console.WriteLine("HeartBeat Exception: " + e.Message);
+                Settings.RuntimeLog.Severe("HeartBeat Exception: " + e.ToString());
             }
         }
 
@@ -680,9 +749,8 @@ namespace AdSubApp
                 }
                 catch (Exception e)
                 {
-                    string errStackTrace = e.StackTrace;
-                    string errMessage = e.Message;
-                    System.Console.WriteLine("WebSocket Exception: " + errMessage);
+                    System.Console.WriteLine("WebSocket Exception: " + e.Message);
+                    Settings.RuntimeLog.Severe("WebSocket Exception: " + e.ToString());
                 }
             }
         }
@@ -710,6 +778,10 @@ namespace AdSubApp
                             {
                                 Toast.MakeText(this, "cmd: " + cmd, ToastLength.Short).Show();
                             });
+                            if (Settings.RuntimeLog.IsLoggable(Level.Fine))
+                            {
+                                Settings.RuntimeLog.Fine("cmd: " + cmd);
+                            }
 
                             // 解析参数
                             using (JSONObject cmdArg = jsonResult.OptJSONObject("cmdArg"))
@@ -723,6 +795,7 @@ namespace AdSubApp
                                     lock (ConfigLocker)
                                     {
                                         // 备份配置文件
+                                        Settings.RuntimeLog.Info("备份配置文件");
                                         string configPath = Settings.AppPath + "/" + GetString(Resource.String.configFile);
                                         string bakConfigPath = configPath + ".bak";
                                         File bakConfigFile = new File(bakConfigPath);
@@ -760,8 +833,9 @@ namespace AdSubApp
                                                             {
                                                                 RunOnUiThread(() =>
                                                                 {
-                                                                    Toast.MakeText(this, localFile.Name + "文件已存在！", ToastLength.Long).Show();
+                                                                    Toast.MakeText(this, localFile.Name + "文件已存在", ToastLength.Long).Show();
                                                                 });
+                                                                Settings.RuntimeLog.Info(localFile.Name + "文件已存在");
                                                                 continue;
                                                             }
                                                             else
@@ -782,8 +856,9 @@ namespace AdSubApp
                                                             // 下载资源成功
                                                             RunOnUiThread(() =>
                                                             {
-                                                                Toast.MakeText(this, "下载资源" + name + "成功！", ToastLength.Long).Show();
+                                                                Toast.MakeText(this, "下载资源" + name + "成功", ToastLength.Long).Show();
                                                             });
+                                                            Settings.RuntimeLog.Info("下载资源" + name + "成功");
 
                                                             //// 匹配MD5值
                                                             //if (!MatchMd5(localpath, md5))
@@ -791,8 +866,9 @@ namespace AdSubApp
                                                             //    // 匹配MD5值失败
                                                             //    RunOnUiThread(() =>
                                                             //    {
-                                                            //        Toast.MakeText(this, "匹配MD5值失败！", ToastLength.Long).Show();
+                                                            //        Toast.MakeText(this, "匹配MD5值失败", ToastLength.Long).Show();
                                                             //    });
+                                                            //    Settings.RuntimeLog.Warning("匹配MD5值失败");
                                                             //    Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
                                                             //    Settings.HeartBeatParams.Put("errMsg", "Failed to match " + name + " MD5");
 
@@ -807,14 +883,16 @@ namespace AdSubApp
                                                             // 下载资源失败
                                                             RunOnUiThread(() =>
                                                             {
-                                                                Toast.MakeText(this, "下载资源" + name + "失败！", ToastLength.Long).Show();
+                                                                Toast.MakeText(this, "下载资源" + name + "失败", ToastLength.Long).Show();
                                                             });
+                                                            Settings.RuntimeLog.Warning("下载资源" + name + "失败");
                                                             Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
                                                             Settings.HeartBeatParams.Put("errMsg", "Failed to download " + name);
 
                                                             // 恢复备份文件
                                                             configFile.Delete();
                                                             bakConfigFile.RenameTo(configFile);
+                                                            Settings.RuntimeLog.Info("恢复备份文件");
                                                             break;
                                                         }
                                                     }
@@ -823,8 +901,9 @@ namespace AdSubApp
                                                         // 所有资源下载成功
                                                         RunOnUiThread(() =>
                                                         {
-                                                            Toast.MakeText(this, "所有资源下载成功！", ToastLength.Long).Show();
+                                                            Toast.MakeText(this, "所有资源下载成功", ToastLength.Long).Show();
                                                         });
+                                                        Settings.RuntimeLog.Info("所有资源下载成功");
                                                         Settings.HeartBeatParams.Put("lastCmd", cmd + "_Success");
 
                                                         // 重新载入节目
@@ -838,13 +917,15 @@ namespace AdSubApp
                                             // 下载配置失败
                                             RunOnUiThread(() =>
                                             {
-                                                Toast.MakeText(this, "下载配置失败！", ToastLength.Long).Show();
+                                                Toast.MakeText(this, "下载配置失败", ToastLength.Long).Show();
                                             });
+                                            Settings.RuntimeLog.Warning("下载配置失败");
                                             Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
                                             Settings.HeartBeatParams.Put("errMsg", "Failed to download Config");
 
                                             // 恢复备份文件
                                             bakConfigFile.RenameTo(configFile);
+                                            Settings.RuntimeLog.Info("恢复备份文件");
                                         }
 
                                         // 删除备份配置文件
@@ -872,6 +953,7 @@ namespace AdSubApp
                                 else
                                 {
                                     // other cmd
+                                    Settings.RuntimeLog.Warning("Unknown cmd: " + cmd);
                                     Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
                                     Settings.HeartBeatParams.Put("errMsg", "Unknown cmd: " + cmd);
                                 }
@@ -889,6 +971,7 @@ namespace AdSubApp
                                     toast.Show();
                                 }
                             });
+                            Settings.RuntimeLog.Info("心跳线程: " + timeStamp);
                         }
                     }
                     else  // Failure
@@ -899,12 +982,14 @@ namespace AdSubApp
                         {
                             Toast.MakeText(this, "心跳线程: " + ErrMsg, ToastLength.Long).Show();
                         });
+                        Settings.RuntimeLog.Warning("心跳线程: " + ErrMsg);
                     }
                 }
             }
             catch (Exception e)
             {
                 System.Console.WriteLine("ParseHttpResult Exception: " + e.Message);
+                Settings.RuntimeLog.Severe("ParseHttpResult Exception: " + e.ToString());
             }
         }
 
@@ -943,16 +1028,11 @@ namespace AdSubApp
                 }
                 tmpBuf = null;
             }
-            catch (IOException e)
-            {
-                bRet = false;
-                e.PrintStackTrace();
-                System.Console.WriteLine("FtpDownload IOException: " + e.Message);
-            }
             catch (Exception e)
             {
                 bRet = false;
                 System.Console.WriteLine("FtpDownload Exception: " + e.Message);
+                Settings.RuntimeLog.Severe("FtpDownload Exception: " + e.ToString());
             }
             finally
             {
@@ -1004,6 +1084,7 @@ namespace AdSubApp
             catch (Exception e)
             {
                 System.Console.WriteLine("MatchMd5 Exception: " + e.Message);
+                Settings.RuntimeLog.Severe("MatchMd5 Exception: " + e.ToString());
             }
             encrypt = null;
             return bRet;

@@ -60,7 +60,7 @@ namespace AdSubApp.SrcActivity
                 }
                 catch (Exception e)
                 {
-                    System.Console.WriteLine("imageView Exception: " + e.Message);
+                    Settings.RuntimeLog.Severe("imageView Exception: " + e.ToString());
                 }
             }
 

@@ -96,6 +96,7 @@
     <Compile Include="Util\ActivityManager.cs" />
     <Compile Include="Util\BootBroadcastReceiver.cs" />
     <Compile Include="Util\Md5Encrypt.cs" />
+    <Compile Include="Util\LogFormatter.cs" />
     <Compile Include="Util\Settings.cs" />
   </ItemGroup>
   <ItemGroup>

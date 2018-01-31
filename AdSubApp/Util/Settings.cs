@@ -25,6 +25,11 @@ namespace AdSubApp.Util
         public static string Version = "0.0";
 
         /// <summary>
+        /// 运行时日志
+        /// </summary>
+        public static Java.Util.Logging.Logger RuntimeLog = null;
+
+        /// <summary>
         /// 当前进程navtive堆中总内存大小
         /// </summary>
         public static long lNativeHeapSize = 0;
