@@ -71,10 +71,13 @@ namespace AdSubApp
                 // 故重启！
                 //RestartApp();
 
-                // 重启后亦不生效，自杀后，通过守护进程开启
-                Settings.RuntimeLog.Info("重启后亦不生效，自杀后，通过守护进程开启");
-                Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
-                return;
+                //// 重启后亦不生效，自杀后，通过守护进程开启
+                //Settings.RuntimeLog.Info("重启后亦不生效，自杀后，通过守护进程开启");
+                //Daemon();  // 关闭前，查看守护进程
+                //Finish();
+                //System.Threading.Thread.Sleep(8);
+                //Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
+                //return;
             }
 
             // 节目控制线程
@@ -110,10 +113,10 @@ namespace AdSubApp
                         if (IsTimePointIn(DateTime.Now))
                         {
                             // 01:30~6:30 关闭程序
+                            Settings.RuntimeLog.Info("01:30~6:30 关闭程序");
                             Daemon();  // 关闭前，查看守护进程
                             Finish();
                             System.Threading.Thread.Sleep(8);
-                            Settings.RuntimeLog.Info("01:30~6:30 关闭程序");
                             Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
                         }
                     }
@@ -141,12 +144,6 @@ namespace AdSubApp
         protected override void OnDestroy()
         {
             base.OnDestroy();
-
-            if (am != null)
-            {
-                am.Dispose();
-                am = null;
-            }
 
             bIsWebSocketHandlerOn = false;
             if (wsClient != null)
@@ -341,22 +338,17 @@ namespace AdSubApp
         }
 
         /// <summary>
-        /// 系统全局Activity管理器
-        /// </summary>
-        public ActivityManager am = null;
-
-        /// <summary>
         /// 守护
         /// </summary>
         public void Daemon()
         {
             // 获取系统全局Activity管理器
-            if (am == null)
+            if (Settings.am == null)
             {
-                am = this.GetSystemService(Context.ActivityService) as ActivityManager;
+                Settings.am = this.GetSystemService(Context.ActivityService) as ActivityManager;
             }
             // 获取当前运行中进程
-            var runningAppProcesses = am.RunningAppProcesses;
+            var runningAppProcesses = Settings.am.RunningAppProcesses;
             bool bIsRunning = false;  // 被守护程序是否在运行中
             foreach (var one in runningAppProcesses)
             {
@@ -374,7 +366,7 @@ namespace AdSubApp
             {
                 // 未运行，则重启之！
                 Settings.RuntimeLog.Info("被守护程序未运行，则重启之！");
-                RestartApp(Settings.PeerName);
+                RestartApp(Settings.PeerName, 500);
             }
         }
 
@@ -392,10 +384,17 @@ namespace AdSubApp
                 iStartActivity.SetAction(Intent.ActionMain);
                 iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
                 iStartActivity.PutExtra("mode", "restart");
-                using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
-                using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                if (triggerAtMillis > 0)
                 {
-                    am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                    using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
+                    using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                    {
+                        am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                    }
+                }
+                else
+                {
+                    StartActivity(iStartActivity);
                 }
             }
         }
@@ -507,68 +506,66 @@ namespace AdSubApp
             }
 
             // 节目循环
-            while (bIsProgramLoop)
+            using (JSONObject program = jsonConfig.OptJSONObject("program"))
+            using (JSONArray resources = program.OptJSONArray("resources"))
             {
-                using (JSONObject program = jsonConfig.OptJSONObject("program"))
-                using (JSONArray resources = program.OptJSONArray("resources"))
+                int i = -1, nLength = resources.Length();
+                while (bIsProgramLoop)
                 {
-                    int nLength = resources.Length();
-                    for (int i = 0; i < nLength; i++)  // 资源循环
+                    i = (i + 1) % nLength;  // 资源循环
+                    CActivityManager.GetInstence().FinishSingleActivityByType(typeof(VideoViewActivity));  // 关闭视频播放
+                    CActivityManager.GetInstence().FinishSingleActivityByType(typeof(ImageViewActivity));  // 关闭图片播放
+                    if (!bIsProgramLoop)
                     {
-                        CActivityManager.GetInstence().FinishSingleActivityByType(typeof(VideoViewActivity));  // 关闭视频播放
-                        CActivityManager.GetInstence().FinishSingleActivityByType(typeof(ImageViewActivity));  // 关闭图片播放
-                        if (!bIsProgramLoop)
+                        // 重新载入节目
+                        RunOnUiThread(() =>
                         {
-                            // 重新载入节目
-                            RunOnUiThread(() =>
+                            Toast.MakeText(this, "重新载入节目...", ToastLength.Long).Show();
+                        });
+                        Settings.RuntimeLog.Info("重新载入节目...");
+                        break;
+                    }
+                    System.Threading.Thread.Sleep(50);
+                    string name, type, md5, url, duration;
+                    using (JSONObject resource = resources.GetJSONObject(i))
+                    {
+                        name = resource.OptString("name");
+                        type = resource.OptString("type");
+                        md5 = resource.OptString("md5");
+                        url = resource.OptString("url");
+                        duration = resource.OptString("duration");
+                    }
+                    if (type == "video")
+                    {
+                        // 播放视频
+                        RunOnUiThread(() =>
+                        {
+                            using (Intent intentVideo = new Intent(this, typeof(VideoViewActivity)))
                             {
-                                Toast.MakeText(this, "重新载入节目...", ToastLength.Long).Show();
-                            });
-                            Settings.RuntimeLog.Info("重新载入节目...");
-                            break;
-                        }
-                        System.Threading.Thread.Sleep(50);
-                        string name, type, md5, url, duration;
-                        using (JSONObject resource = resources.GetJSONObject(i))
+                                intentVideo.PutExtra("uri", Settings.AppPath + "/" + type + "/" + name);
+                                StartActivity(intentVideo);
+                            }
+                        });
+                        Settings.semVideoCompleted.WaitOne();  // 等待视频结束
+                    }
+                    else if (type == "image")
+                    {
+                        // 播放图片
+                        RunOnUiThread(() =>
                         {
-                            name = resource.OptString("name");
-                            type = resource.OptString("type");
-                            md5 = resource.OptString("md5");
-                            url = resource.OptString("url");
-                            duration = resource.OptString("duration");
-                        }
-                        if (type == "video")
-                        {
-                            // 播放视频
-                            RunOnUiThread(() =>
+                            using (Intent intentImage = new Intent(this, typeof(SrcActivity.ImageViewActivity)))
                             {
-                                using (Intent intentVideo = new Intent(this, typeof(VideoViewActivity)))
-                                {
-                                    intentVideo.PutExtra("uri", Settings.AppPath + "/" + type + "/" + name);
-                                    StartActivity(intentVideo);
-                                }
-                            });
-                            Settings.semVideoCompleted.WaitOne();  // 等待视频结束
-                        }
-                        else if (type == "image")
-                        {
-                            // 播放图片
-                            RunOnUiThread(() =>
-                            {
-                                using (Intent intentImage = new Intent(this, typeof(SrcActivity.ImageViewActivity)))
-                                {
-                                    intentImage.PutExtra("uri", Settings.AppPath + "/" + type + "/" + name);
-                                    StartActivity(intentImage);
-                                }
-                            });
+                                intentImage.PutExtra("uri", Settings.AppPath + "/" + type + "/" + name);
+                                StartActivity(intentImage);
+                            }
+                        });
 
-                            int nDuration = int.Parse(duration) + 1;  // 图片播放时间
-                            System.Threading.Thread.Sleep(nDuration * 1000);
-                        }
-                        else
-                        {
-                            // other type
-                        }
+                        int nDuration = int.Parse(duration) + 1;  // 图片播放时间
+                        System.Threading.Thread.Sleep(nDuration * 1000);
+                    }
+                    else
+                    {
+                        // other type
                     }
                 }
             }
@@ -936,6 +933,40 @@ namespace AdSubApp
                                         configFile = null;
                                     }
                                 }
+                                else if(cmd == "update")
+                                {
+                                    string user = cmdArg.OptString("user");
+                                    string pwd = cmdArg.OptString("pwd");
+                                    string path = cmdArg.OptString("path");
+                                    string localPath = Settings.AppPath + "/" + GetString(Resource.String.ApplicationName) + ".apk";
+
+                                    // 下载新版本
+                                    bool bSussess = FtpDownload(user, pwd, path, localPath);
+                                    if (bSussess)
+                                    {
+                                        // 下载新版本成功
+                                        RunOnUiThread(() =>
+                                        {
+                                            Toast.MakeText(this, "下载新版本成功", ToastLength.Long).Show();
+                                        });
+                                        Settings.RuntimeLog.Info("下载新版本成功");
+                                        Settings.HeartBeatParams.Put("lastCmd", cmd + "_Succeed");
+
+                                        // 安装
+                                        InstallApp(localPath);
+                                    }
+                                    else
+                                    {
+                                        // 下载新版本失败
+                                        RunOnUiThread(() =>
+                                        {
+                                            Toast.MakeText(this, "下载新版本失败", ToastLength.Long).Show();
+                                        });
+                                        Settings.RuntimeLog.Warning("下载新版本失败");
+                                        Settings.HeartBeatParams.Put("lastCmd", cmd + "_Failure");
+                                        Settings.HeartBeatParams.Put("errMsg", "Failed to download new version");
+                                    }
+                                }
                                 else if (cmd == "restart")
                                 {
                                     Settings.HeartBeatParams.Put("lastCmd", cmd + "_Success");
@@ -990,6 +1021,53 @@ namespace AdSubApp
             {
                 System.Console.WriteLine("ParseHttpResult Exception: " + e.Message);
                 Settings.RuntimeLog.Severe("ParseHttpResult Exception: " + e.ToString());
+            }
+        }
+
+        /// <summary>
+        /// 下载进度
+        /// </summary>
+        /// <param name="title">标题</param>
+        /// <param name="max">最大进度</param>
+        /// <param name="progress">当前进度</param>
+        public void DownloadProgress(string title, int max, int progress)
+        {
+            // 获取系统全局Notification管理器
+            if (Settings.nm == null)
+            {
+                Settings.nm = this.GetSystemService(Context.NotificationService) as NotificationManager;
+            }
+
+            if (progress > max)
+            {
+                Settings.nm.Cancel(0);  // 下载完毕，移除通知栏
+            }
+            else
+            {
+                int requestCode = 123456 + System.DateTime.Now.Millisecond;
+                using (Intent intent = new Intent())
+                {
+                    using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, intent, PendingIntentFlags.OneShot))
+                    {
+                        Notification notification = new Notification.Builder(this)
+                            .SetSmallIcon(Resource.Drawable.Icon)  // App小图标
+                            .SetLargeIcon(null)  // App大图标
+                            .SetContentTitle(title)  // 设置通知信息
+                            .SetContentIntent(operation)
+                            .SetWhen(DateTime.Now.Ticks)
+                            .SetContentText("当前下载进度: " + progress / max + "%")
+                            .SetAutoCancel(true)  // 用户点击后自动删除
+                            .SetDefaults(NotificationDefaults.Lights)  // 灯光
+                            .SetPriority(0)  // 设置优先级
+                            .SetOngoing(true)
+                            .SetProgress(max, progress, false)  // max最大进度 progress当前进度
+                            .Build();
+
+                        Settings.nm.Notify(0, notification);
+                        notification.Dispose();
+                        notification = null;
+                    }
+                }
             }
         }
 
@@ -1088,6 +1166,27 @@ namespace AdSubApp
             }
             encrypt = null;
             return bRet;
+        }
+
+        /// <summary>
+        /// 安装应用
+        /// </summary>
+        /// <param name="filePath">文件路径</param>
+        /// <param name="triggerAtMillis">延时安装时间（默认3000ms）</param>
+        public void InstallApp(string filePath, long triggerAtMillis = 3000)
+        {
+            int requestCode = 123456 + System.DateTime.Now.Millisecond;
+            using (Intent intent = new Intent(Intent.ActionView))
+            {
+                intent.SetDataAndType(Android.Net.Uri.Parse("file://" + filePath), 
+                    "application/vnd.android.package-archive");
+                intent.AddFlags(ActivityFlags.NewTask);
+                using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, intent, PendingIntentFlags.OneShot))
+                using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                {
+                    am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                }
+            }
         }
     }
 }

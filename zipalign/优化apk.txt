@@ -1,0 +1,7 @@
+优化apk：
+zipalign -v 4 demo_signed.apk demo_signed_zipaligned.apk
+
+查询apk是否优化过：
+zipalign -c -v 4 demo_signed.apk
+
+注：未签名的.apk不能使用，也不能优化

@@ -115,6 +115,11 @@ namespace AdSubApp.SrcActivity
 
         protected override void OnResume()
         {
+            if (!mediaPlayer.IsPlaying)
+            {
+                // 继续播放
+                mediaPlayer.Start();
+            }
             base.OnResume();
         }
 

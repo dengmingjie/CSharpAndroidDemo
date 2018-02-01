@@ -16,8 +16,6 @@ namespace RestartAppService
         {
             base.OnCreate(bundle);
 
-            // 后台运行
-            this.MoveTaskToBack(true);
             // 隐藏标题栏  
             this.RequestWindowFeature(WindowFeatures.NoTitle);
             // 隐藏状态栏  
@@ -45,6 +43,9 @@ namespace RestartAppService
             {
                 DaemonThread.Start();
             }
+
+            // 后台运行
+            this.MoveTaskToBack(true);
         }
 
         protected override void OnDestroy()
@@ -119,7 +120,12 @@ namespace RestartAppService
             {
                 var importance = one.Importance;  // 当前状态（前/后台）
                 string processName = one.ProcessName;
-                if (processName == Settings.PeerName)
+                if (processName == this.PackageName && importance == Importance.Foreground)
+                {
+                    // 后台运行
+                    this.MoveTaskToBack(true);
+                }
+                else if (processName == Settings.PeerName)
                 {
                     // 运行中
                     bIsRunning = true;
@@ -157,10 +163,17 @@ namespace RestartAppService
                 iStartActivity.SetAction(Intent.ActionMain);
                 iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
                 iStartActivity.PutExtra("mode", "restart");
-                using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
-                using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                if (triggerAtMillis > 0)
                 {
-                    am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                    using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
+                    using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                    {
+                        am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                    }
+                }
+                else
+                {
+                    StartActivity(iStartActivity);
                 }
             }
         }

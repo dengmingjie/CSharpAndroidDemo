@@ -1,0 +1,11 @@
+1.在AndroidManifest.xml中的manifest节点中添加android:sharedUserId="android.uid.system"
+
+2.编译出.apk文件后，用压缩工具打开，删除META-INF目录下的CERT.SF和CERT.RSA两个文件
+
+3.使用android自带的签名工具signapk.jar以及源码中的platform.x509.pem和platform.pk8，对apk进行重新签名
+文件位置：可以在platform/build/target/product/security/中找到platform.x509.pem和platform.pk8等签名文件，对应不同的权限
+signapk.jar：由/platform/build/tools/signapk/编译产出，可以在/out/host/linux-x86/framework/中找到
+
+4.执行java -jar signapk.jar platform.x509.pem platform.pk8 demo.apk demo_signed.apk
+
+注：签名后可能导致不能操作sdcard目录下的文件

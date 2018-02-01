@@ -73,6 +73,16 @@ namespace AdSubApp.Util
         public static string AppPath;
 
         /// <summary>
+        /// 系统全局Activity管理器
+        /// </summary>
+        public static Android.App.ActivityManager am = null;
+
+        /// <summary>
+        /// 系统全局Notification管理器
+        /// </summary>
+        public static Android.App.NotificationManager nm = null;
+
+        /// <summary>
         /// cpuId
         /// </summary>
         private static string _cpuId = null;
