@@ -34,30 +34,6 @@ namespace AdSubApp
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
 
-            // 判断SD卡是否存在 
-            if (Android.OS.Environment.ExternalStorageState == Android.OS.Environment.MediaMounted)
-            {
-                // 设置APP目录
-                Settings.AppPath = Android.OS.Environment.ExternalStorageDirectory.AbsolutePath + "/" + GetString(Resource.String.ApplicationName);
-                using (File file = new File(Settings.AppPath))
-                {
-                    if (!file.Exists())
-                    {
-                        bool bSuccess = file.Mkdirs();
-                        // If failed, do something
-                        //this.Finish();
-                    }
-                }
-            }
-            else  // SD卡不存在
-            {
-                // 设置为当前目录
-                Settings.AppPath = "./" + GetString(Resource.String.ApplicationName);
-            }
-
-            // 初始化运行时日志
-            InitRuntimeLog();
-
             // 获取启动方式
             string mode = null;
             if (Intent.Extras != null)
@@ -175,51 +151,6 @@ namespace AdSubApp
 
             CActivityManager.GetInstence().FinishAllActivity();
             Settings.RuntimeLog.Info("OnDestroy");
-            FreeRuntimeLog();
-        }
-
-        /// <summary>
-        /// 初始化运行时日志
-        /// </summary>
-        public void InitRuntimeLog()
-        {
-            // 创建/获取日志对象
-            Settings.RuntimeLog = Logger.GetLogger(GetString(Resource.String.ApplicationName));
-            Settings.RuntimeLog.Level = Level.Info;  // 设置日志等级
-
-            // 设置控制台输出
-            using (ConsoleHandler consoleHandler = new ConsoleHandler())
-            {
-                //consoleHandler.Formatter = new LogFormatter();  // 设置日志格式
-                consoleHandler.Level = Level.All;  // 设置日志等级
-                Settings.RuntimeLog.AddHandler(consoleHandler);
-            }
-
-            // 设置文件输出
-            using (FileHandler fileHandler = new FileHandler(Settings.AppPath + "/runtime.log"))
-            {
-                fileHandler.Formatter = new LogFormatter();  // 设置日志格式
-                fileHandler.Level = Level.Info;  // 设置日志等级
-                Settings.RuntimeLog.AddHandler(fileHandler);
-            }
-
-            //Settings.RuntimeLog.Info("RuntimeLog test");
-        }
-
-        /// <summary>
-        /// 释放运行时日志
-        /// </summary>
-        public void FreeRuntimeLog()
-        {
-            if (Settings.RuntimeLog != null)
-            {
-                var handlers = Settings.RuntimeLog.GetHandlers();
-                foreach (var one in handlers)
-                {
-                    one.Flush();
-                    one.Close();
-                }
-            }
         }
 
         /// <summary>

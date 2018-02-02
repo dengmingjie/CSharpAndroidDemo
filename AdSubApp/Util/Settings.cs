@@ -1,9 +1,14 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using System.Threading;
+
+using Android.OS;
+using Android.App;
 
 using Java.IO;
 using Java.Net;
+using Java.Util.Logging;
+
+using Org.Json;
 
 namespace AdSubApp.Util
 {
@@ -17,6 +22,15 @@ namespace AdSubApp.Util
             HeartBeatParams = null;
             url.Dispose();
             url = null;
+            if (_runtimeLog != null)
+            {
+                var handlers = _runtimeLog.GetHandlers();
+                foreach (var one in handlers)
+                {
+                    one.Flush();
+                    one.Close();
+                }
+            }
         }
 
         /// <summary>
@@ -27,7 +41,39 @@ namespace AdSubApp.Util
         /// <summary>
         /// 运行时日志
         /// </summary>
-        public static Java.Util.Logging.Logger RuntimeLog = null;
+        private static Logger _runtimeLog = null;
+        public static Logger RuntimeLog
+        {
+            get
+            {
+                if (_runtimeLog == null)
+                {
+                    // 创建/获取日志对象
+                    _runtimeLog = Logger.GetLogger(Application.Context.GetString(Resource.String.ApplicationName));
+                    _runtimeLog.Level = Level.Info;  // 设置日志等级
+
+                    // 设置控制台输出
+                    using (ConsoleHandler consoleHandler = new ConsoleHandler())
+                    {
+                        consoleHandler.Level = Level.All;  // 设置日志等级
+                        _runtimeLog.AddHandler(consoleHandler);
+                    }
+
+                    // 设置文件输出
+                    using (FileHandler fileHandler = new FileHandler(AppPath + "/runtime.log", true))
+                    {
+                        fileHandler.Formatter = new LogFormatter();  // 设置日志格式
+                        fileHandler.Level = Level.Info;  // 设置日志等级
+                        _runtimeLog.AddHandler(fileHandler);
+                    }
+                }
+                return _runtimeLog;
+            }
+            set
+            {
+                _runtimeLog = value;
+            }
+        }
 
         /// <summary>
         /// 当前进程navtive堆中总内存大小
@@ -60,7 +106,7 @@ namespace AdSubApp.Util
         /// <summary>
         /// 心跳参数
         /// </summary>
-        public static Org.Json.JSONObject HeartBeatParams = new Org.Json.JSONObject();
+        public static JSONObject HeartBeatParams = new JSONObject();
 
         /// <summary>
         /// 被守护程序名
@@ -70,17 +116,49 @@ namespace AdSubApp.Util
         /// <summary>
         /// APP目录
         /// </summary>
-        public static string AppPath;
+        private static string _appPath = null;
+        public static string AppPath
+        {
+            get
+            {
+                if (_appPath == null)
+                {
+                    // 判断SD卡是否存在
+                    if (Environment.ExternalStorageState == Environment.MediaMounted)
+                    {
+                        // 设置APP目录
+                        _appPath = Environment.ExternalStorageDirectory.AbsolutePath + "/" + Application.Context.GetString(Resource.String.ApplicationName);
+                        using (File file = new File(_appPath))
+                        {
+                            if (!file.Exists())
+                            {
+                                file.Mkdirs();
+                            }
+                        }
+                    }
+                    else  // SD卡不存在
+                    {
+                        // 设置为当前目录
+                        _appPath = "./" + Application.Context.GetString(Resource.String.ApplicationName);
+                    }
+                }
+                return _appPath;
+            }
+            set
+            {
+                _appPath = value;
+            }
+        }
 
         /// <summary>
         /// 系统全局Activity管理器
         /// </summary>
-        public static Android.App.ActivityManager am = null;
+        public static ActivityManager am = null;
 
         /// <summary>
         /// 系统全局Notification管理器
         /// </summary>
-        public static Android.App.NotificationManager nm = null;
+        public static NotificationManager nm = null;
 
         /// <summary>
         /// cpuId
