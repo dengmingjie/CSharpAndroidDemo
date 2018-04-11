@@ -305,8 +305,8 @@ namespace AdSubApp
         /// 重启应用
         /// </summary>
         /// <param name="packageName">APP程序包名</param>
-        /// <param name="triggerAtMillis">延时启动时间（默认3000ms）</param>
-        public void RestartApp(string packageName, long triggerAtMillis = 3000)
+        /// <param name="delayMillis">延时启动时间（默认3000ms）</param>
+        public void RestartApp(string packageName, long delayMillis = 3000)
         {
             int requestCode = 123456 + System.DateTime.Now.Millisecond;
             using (Intent iStartActivity = PackageManager.GetLaunchIntentForPackage(packageName))
@@ -315,12 +315,12 @@ namespace AdSubApp
                 iStartActivity.SetAction(Intent.ActionMain);
                 iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
                 iStartActivity.PutExtra("mode", "restart");
-                if (triggerAtMillis > 0)
+                if (delayMillis > 0)
                 {
                     using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
                     using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
                     {
-                        am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                        am.Set(AlarmType.Rtc, System.DateTime.Now.Millisecond + delayMillis, operation);
                     }
                 }
                 else
@@ -435,6 +435,7 @@ namespace AdSubApp
                 Settings.RuntimeLog.Info("正在载入节目...");
                 bIsProgramLoop = true;
             }
+            else return;
 
             // 节目循环
             using (JSONObject program = jsonConfig.OptJSONObject("program"))
@@ -578,14 +579,14 @@ namespace AdSubApp
                     }
                     else
                     {
-                        long Code = (long)httpConn.ResponseCode;
+                        long nCode = (long)httpConn.ResponseCode;
 
                         // HTTP error
                         RunOnUiThread(() =>
                         {
-                            Toast.MakeText(this, "心跳线程: HTTP error code " + Code, ToastLength.Long).Show();
+                            Toast.MakeText(this, "心跳线程: HTTP error code " + nCode, ToastLength.Long).Show();
                         });
-                        Settings.RuntimeLog.Info("心跳线程: HTTP error code " + Code);
+                        Settings.RuntimeLog.Info("心跳线程: HTTP error code " + nCode);
                     }
 
                     httpConn.Disconnect();  // 断开HTTP连接
@@ -924,7 +925,6 @@ namespace AdSubApp
                         else
                         {
                             string timeStamp = jsonResult.OptString("timeStamp");
-
                             RunOnUiThread(() =>
                             {
                                 using (Toast toast = Toast.MakeText(this, "心跳线程: " + timeStamp, ToastLength.Short))
@@ -939,7 +939,6 @@ namespace AdSubApp
                     else  // Failure
                     {
                         string ErrMsg = jsonResult.OptString("ErrMsg");
-
                         RunOnUiThread(() =>
                         {
                             Toast.MakeText(this, "心跳线程: " + ErrMsg, ToastLength.Long).Show();
@@ -1103,8 +1102,8 @@ namespace AdSubApp
         /// 安装应用
         /// </summary>
         /// <param name="filePath">文件路径</param>
-        /// <param name="triggerAtMillis">延时安装时间（默认3000ms）</param>
-        public void InstallApp(string filePath, long triggerAtMillis = 3000)
+        /// <param name="delayMillis">延时安装时间（默认3000ms）</param>
+        public void InstallApp(string filePath, long delayMillis = 3000)
         {
             int requestCode = 123456 + System.DateTime.Now.Millisecond;
             using (Intent intent = new Intent(Intent.ActionView))
@@ -1112,10 +1111,17 @@ namespace AdSubApp
                 intent.SetDataAndType(Android.Net.Uri.Parse("file://" + filePath), 
                     "application/vnd.android.package-archive");
                 intent.AddFlags(ActivityFlags.NewTask);
-                using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, intent, PendingIntentFlags.OneShot))
-                using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                if (delayMillis > 0)
                 {
-                    am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                	using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, intent, PendingIntentFlags.OneShot))
+                	using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
+                	{
+                    	am.Set(AlarmType.Rtc, System.DateTime.Now.Millisecond + delayMillis, operation);
+                	}
+                }
+                else
+                {
+                    StartActivity(iStartActivity);
                 }
             }
         }

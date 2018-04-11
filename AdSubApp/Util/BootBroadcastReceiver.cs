@@ -9,7 +9,8 @@ namespace AdSubApp.Util
         public BootBroadcastReceiver() { }
 
         public override void OnReceive(Context context, Intent intent)
-        {   
+        {
+            //Settings.RuntimeLog.Warning(Intent.ActionBootCompleted);
             if (intent.Action.Equals(Intent.ActionBootCompleted))
             {
                 // 立即启动：未完全生效、后台运行
@@ -19,6 +20,7 @@ namespace AdSubApp.Util
                 iStartActivity.AddFlags(ActivityFlags.NewTask | ActivityFlags.ResetTaskIfNeeded);
                 iStartActivity.PutExtra("mode", "startup");
                 context.StartActivity(iStartActivity);
+                //Settings.RuntimeLog.Warning("Ready to startup...");
             }
         }
     }

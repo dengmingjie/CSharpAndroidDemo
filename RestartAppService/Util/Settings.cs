@@ -12,7 +12,7 @@ namespace RestartAppService.Util
         /// <summary>
         /// 被守护程序名
         /// </summary>
-        public static string PeerName = "AdSubApp.AdSubApp";
+        public static string PeerName = "mjdeng.adsubapp";
 
         /// <summary>
         /// 守护频率（默认10000ms）

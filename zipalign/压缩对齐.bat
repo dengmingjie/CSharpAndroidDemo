@@ -1,3 +1,4 @@
-zipalign -v 4 %1 %~n1_zipaligned.apk
+@echo off
+zipalign -v 4 %1 %~n1_zipaligned%~x1
 Pause
-EXIT
+Exit

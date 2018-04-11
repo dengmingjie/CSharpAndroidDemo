@@ -168,7 +168,7 @@ namespace RestartAppService
                     using (PendingIntent operation = PendingIntent.GetActivity(this, requestCode, iStartActivity, PendingIntentFlags.OneShot))
                     using (AlarmManager am = GetSystemService(Context.AlarmService) as AlarmManager)
                     {
-                        am.Set(AlarmType.Rtc, triggerAtMillis, operation);
+                        am.Set(AlarmType.RtcWakeup, triggerAtMillis, operation);
                     }
                 }
                 else
